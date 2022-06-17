@@ -5,7 +5,7 @@ import { authenticatedFetch } from "@shopify/app-bridge-utils";
 import { Redirect } from "@shopify/app-bridge/actions";
 import { AppProvider as PolarisProvider } from "@shopify/polaris";
 import translations from "@shopify/polaris/locales/en.json";
-import { HomePage } from "./components/HomePage";
+import { HomePage } from "./HomePage";
 
 export default function App() {
   return (
