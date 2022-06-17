@@ -1,7 +1,6 @@
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { userLoggedInFetch } from '../App';
 
-console.log(userLoggedInFetch);
 export function HomePage() {
   const app = useAppBridge();
   const fetch = userLoggedInFetch(app);

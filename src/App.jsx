@@ -1,36 +1,10 @@
-/* import { useEffect } from 'react';
-import { productService } from './api/service';
-export default () => {
-
-  useEffect(() => {
-    (async() => {
-      const [err, data] = await productService.list()
-      console.log(err);
-      console.log(data);
-    })()
-  })
-
-  return <div>
-    <h1>2</h1>
-    <input type='file' />
-  </div>
-} */
-
 import {
-  ApolloClient,
-  ApolloProvider,
-  HttpLink,
-  InMemoryCache,
-} from "@apollo/client";
-import {
-  Provider as AppBridgeProvider,
-  useAppBridge,
+  Provider as AppBridgeProvider
 } from "@shopify/app-bridge-react";
 import { authenticatedFetch } from "@shopify/app-bridge-utils";
 import { Redirect } from "@shopify/app-bridge/actions";
 import { AppProvider as PolarisProvider } from "@shopify/polaris";
 import translations from "@shopify/polaris/locales/en.json";
-
 import { HomePage } from "./components/HomePage";
 
 export default function App() {
@@ -43,26 +17,12 @@ export default function App() {
           forceRedirect: true,
         }}
       >
-        <MyProvider>
-          <HomePage />
-        </MyProvider>
+        <HomePage />
       </AppBridgeProvider>
     </PolarisProvider>
   );
 }
 
-function MyProvider({ children }) {
-  const app = useAppBridge();
-  const client = new ApolloClient({
-    cache: new InMemoryCache(),
-    link: new HttpLink({
-      credentials: "include",
-      fetch: userLoggedInFetch(app),
-    }),
-  });
-
-  return <ApolloProvider client={client}>{children}</ApolloProvider>;
-}
 
 export function userLoggedInFetch(app) {
   const fetchFunction = authenticatedFetch(app);
@@ -74,12 +34,10 @@ export function userLoggedInFetch(app) {
       const authUrlHeader = response.headers.get(
         "X-Shopify-API-Request-Failure-Reauthorize-Url"
       );
-
       const redirect = Redirect.create(app);
       redirect.dispatch(Redirect.Action.APP, authUrlHeader || `/auth`);
       return null;
     }
-
     return response;
   };
 }
