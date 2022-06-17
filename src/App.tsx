@@ -1,3 +1,4 @@
+import { ClientApplication } from "@shopify/app-bridge";
 import {
   Provider as AppBridgeProvider
 } from "@shopify/app-bridge-react";
@@ -7,13 +8,14 @@ import { AppProvider as PolarisProvider } from "@shopify/polaris";
 import translations from "@shopify/polaris/locales/en.json";
 import { HomePage } from "./HomePage";
 
+console.log(process.env);
 export default function App() {
   return (
     <PolarisProvider i18n={translations}>
       <AppBridgeProvider
         config={{
-          apiKey: process.env.SHOPIFY_API_KEY,
-          host: new URL(location).searchParams.get("host"),
+          apiKey: process.env.SHOPIFY_API_KEY as string,
+          host: new URL(location.href).searchParams.get("host") as string,
           forceRedirect: true,
         }}
       >
@@ -24,9 +26,9 @@ export default function App() {
 }
 
 
-export function userLoggedInFetch(app) {
+export function userLoggedInFetch(app: ClientApplication) {
   const fetchFunction = authenticatedFetch(app);
-  return async (uri, options) => {
+  return async (uri: RequestInfo, options?: RequestInit) => {
     const response = await fetchFunction(uri, options);
     if (
       response.headers.get("X-Shopify-API-Request-Failure-Reauthorize") === "1"

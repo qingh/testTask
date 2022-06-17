@@ -6,7 +6,7 @@ export function HomePage() {
   const fetch = userLoggedInFetch(app);
   return (
     <button type="button" onClick={async () => {
-      const { count } = await fetch("/list").then((res) => res.json());
-    }}>test2a</button>
+      const { count } = await fetch("/list").then((res) => res!.json());
+    }}>test</button>
   )
 }
