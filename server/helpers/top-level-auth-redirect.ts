@@ -1,9 +1,15 @@
+interface IParam {
+  apiKey: string
+  hostName: string
+  host: string
+  query: string
+}
 export default function topLevelAuthRedirect({
   apiKey,
   hostName,
   host,
   query,
-}) {
+}:IParam) {
   const serializedQuery = new URLSearchParams(query).toString();
   return `<!DOCTYPE html>
 <html>

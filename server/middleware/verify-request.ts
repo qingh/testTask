@@ -1,3 +1,4 @@
+import  { Express } from "express";
 import { Shopify } from "@shopify/shopify-api";
 
 const TEST_GRAPHQL_QUERY = `
@@ -7,15 +8,14 @@ const TEST_GRAPHQL_QUERY = `
   }
 }`;
 
-export default function verifyRequest(app, { returnHeader = true } = {}) {
+export default function verifyRequest(app:Express, { returnHeader = true } = {}) {
+   // @ts-ignore
   return async (req, res, next) => {
     const session = await Shopify.Utils.loadCurrentSession(
       req,
       res,
       app.get("use-online-tokens")
     );
-
-    console.log('session',session);
 
     let shop = req.query.shop;
 

@@ -6,9 +6,8 @@ import { authenticatedFetch } from "@shopify/app-bridge-utils";
 import { Redirect } from "@shopify/app-bridge/actions";
 import { AppProvider as PolarisProvider } from "@shopify/polaris";
 import translations from "@shopify/polaris/locales/en.json";
-import { HomePage } from "./HomePage";
+import { Product } from "./pages/product";
 
-console.log(process.env);
 export default function App() {
   return (
     <PolarisProvider i18n={translations}>
@@ -19,12 +18,11 @@ export default function App() {
           forceRedirect: true,
         }}
       >
-        <HomePage />
+        <Product />
       </AppBridgeProvider>
     </PolarisProvider>
   );
 }
-
 
 export function userLoggedInFetch(app: ClientApplication) {
   const fetchFunction = authenticatedFetch(app);

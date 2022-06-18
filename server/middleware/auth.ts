@@ -1,11 +1,13 @@
-import { Shopify } from "@shopify/shopify-api";
+import { Express } from "express";
+import { AuthQuery, Shopify } from "@shopify/shopify-api";
 
 import topLevelAuthRedirect from "../helpers/top-level-auth-redirect.js";
 
-export default function applyAuthMiddleware(app) {
+export default function applyAuthMiddleware(app: Express) {
   app.get("/auth", async (req, res) => {
     if (!req.signedCookies[app.get("top-level-oauth-cookie")]) {
       return res.redirect(
+        // @ts-ignore
         `/auth/toplevel?${new URLSearchParams(req.query).toString()}`
       );
     }
@@ -13,7 +15,7 @@ export default function applyAuthMiddleware(app) {
     const redirectUrl = await Shopify.Auth.beginAuth(
       req,
       res,
-      req.query.shop,
+      req.query.shop as string,
       "/auth/callback",
       app.get("use-online-tokens")
     );
@@ -34,17 +36,20 @@ export default function applyAuthMiddleware(app) {
       topLevelAuthRedirect({
         apiKey: Shopify.Context.API_KEY,
         hostName: Shopify.Context.HOST_NAME,
+        // @ts-ignore
         host: req.query.host,
+        // @ts-ignore
         query: req.query,
       })
     );
   });
-
+  //AuthQuery
   app.get("/auth/callback", async (req, res) => {
     try {
       const session = await Shopify.Auth.validateAuthCallback(
         req,
         res,
+        // @ts-ignore
         req.query
       );
 
@@ -58,7 +63,7 @@ export default function applyAuthMiddleware(app) {
 
       const response = await Shopify.Webhooks.Registry.register({
         shop: session.shop,
-        accessToken: session.accessToken,
+        accessToken: session.accessToken as string,
         topic: "APP_UNINSTALLED",
         path: "/webhooks",
       });
@@ -75,7 +80,7 @@ export default function applyAuthMiddleware(app) {
       switch (true) {
         case e instanceof Shopify.Errors.InvalidOAuthError:
           res.status(400);
-          res.send(e.message);
+          res.send((e as Error).message);
           break;
         case e instanceof Shopify.Errors.CookieNotFound:
         case e instanceof Shopify.Errors.SessionNotFound:
@@ -84,7 +89,7 @@ export default function applyAuthMiddleware(app) {
           break;
         default:
           res.status(500);
-          res.send(e.message);
+          res.send((e as Error).message);
           break;
       }
     }
