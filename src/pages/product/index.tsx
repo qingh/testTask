@@ -78,8 +78,8 @@ export function Product() {
             <div>
               <img src={item.image ? item.image.src : defaultImg} width="225" height="225" alt="" />
               <div>
-                <span>{item.title}</span>
                 <strong style={{ color: 'red' }}>￥{item.variants[0].price}</strong>
+                <p>{item.title}</p>
               </div>
               <div dangerouslySetInnerHTML={{ __html: item.body_html }}></div>
             </div>
