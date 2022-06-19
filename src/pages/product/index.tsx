@@ -33,7 +33,7 @@ export function Product() {
   }
 
   async function one() {
-    const [err, res] = await http({ url: '/one', method: 'POST' })
+    const [err, res] = await http({ url: '/product/one', method: 'POST' })
     if (err) return console.log(err);
     const { errorCode, message } = res
     if (!errorCode) return console.log(message);
@@ -58,11 +58,20 @@ export function Product() {
     const isDelete = confirm('确定删除商品吗')
     if (isDelete) {
       const [err, res] = await http({ url: `/product/${id}`, method: 'DELETE' })
+      // const [err, res] = await http({ url: `/product/variants/${id}` })
       if (err) return console.log(err);
       const { errorCode, message } = res
       if (!errorCode) return console.log(message);
       getProductList()
     }
+  }
+
+  async function addProductAttr(id: number) {
+    const [err, res] = await http({ url: `/product/variants/${id}`, method: 'POST', body: { user: 'zhang' } })
+    if (err) return console.log(err);
+    const { errorCode, message } = res
+    if (!errorCode) return console.log(message);
+    getProductList()
   }
 
   useEffect(() => {
@@ -72,13 +81,16 @@ export function Product() {
   return (
     <>
       <input type="file" accept="text/csv" onChange={(ev) => exportProducts(ev)} />
+      {/* <button type="button" onClick={() => {
+        http({ url: '/product/variants/8002642706672', body: { user: 'qingh' } })
+      }}>test</button> */}
       <button type="button" onClick={() => one()}>添加商品，没有图片</button>
       <button type="button" onClick={() => addProduct()}>添加商品，有图片</button>
       <button type="button" onClick={() => getProductList()}>重新获取商品列表</button>
       {/* <button type="button" onClick={() => exportProducts()}>批量导入商品</button> */}
       <ul className={css.list}>
         {
-          list.map(item => <li key={item.id} onClick={() => deleteProduct(item.id)} title={item.title}>
+          list.map(item => <li key={item.id} onClick={() => addProductAttr(item.id)} title={item.title}>
             <div>
               <img src={item.image ? item.image.src : defaultImg} width="225" height="225" alt="" />
               <div>
