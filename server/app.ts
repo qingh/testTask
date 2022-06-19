@@ -1,10 +1,11 @@
 import { fileURLToPath } from 'url'
 import { dirname, resolve } from "path";
+import { URLSearchParams } from 'url';
 import express, { Express } from "express";
 import cookieParser from "cookie-parser";
-import { Shopify, ApiVersion } from "@shopify/shopify-api";
+import { Shopify } from "@shopify/shopify-api";
 import "dotenv/config";
-
+import { shopInit } from './shopifyInit.js';
 import applyAuthMiddleware from "./middleware/auth.js";
 import verifyRequest from "./middleware/verify-request.js";
 import formidable from 'formidable';
@@ -15,46 +16,23 @@ interface IFilterList {
   src: string
 }
 
+const PORT = 8081;
+const { NODE_ENV, VITE_TEST_BUILD } = process.env
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
-
 const workbook = new Excel.Workbook()
-const USE_ONLINE_TOKENS = true;
-const TOP_LEVEL_OAUTH_COOKIE = "shopify_top_level_oauth";
+const isTest = NODE_ENV === "test" || !!VITE_TEST_BUILD;
 
-const PORT = parseInt(process.env.PORT || "8081", 10);
-const isTest = process.env.NODE_ENV === "test" || !!process.env.VITE_TEST_BUILD;
+shopInit()
 
-Shopify.Context.initialize({
-  API_KEY: process.env.SHOPIFY_API_KEY as string,
-  API_SECRET_KEY: process.env.SHOPIFY_API_SECRET as string,
-  SCOPES: process.env.SCOPES!.split(","),
-  HOST_NAME: process.env.HOST!.replace(/https:\/\//, ""),
-  API_VERSION: ApiVersion.April22,
-  IS_EMBEDDED_APP: true,
-  // This should be replaced with your preferred storage strategy
-  SESSION_STORAGE: new Shopify.Session.MemorySessionStorage(),
-});
-
-// Storing the currently active shops in memory will force them to re-login when your server restarts. You should
-// persist this object in your app.
-const ACTIVE_SHOPIFY_SHOPS: { [key: string]: any } = {};
-Shopify.Webhooks.Registry.addHandler("APP_UNINSTALLED", {
-  path: "/webhooks",
-  webhookHandler: async (topic, shop, body) => {
-    delete ACTIVE_SHOPIFY_SHOPS[shop];
-  },
-});
-
-// export for test use only
 export async function createServer(
   root = process.cwd(),
-  isProd = process.env.NODE_ENV === "production"
+  isProd = NODE_ENV === "production"
 ) {
   const app: Express = express();
-  app.set("top-level-oauth-cookie", TOP_LEVEL_OAUTH_COOKIE);
-  app.set("active-shopify-shops", ACTIVE_SHOPIFY_SHOPS);
-  app.set("use-online-tokens", USE_ONLINE_TOKENS);
+  app.set("top-level-oauth-cookie", "shopify_top_level_oauth");
+  app.set("active-shopify-shops", {});
+  app.set("use-online-tokens", true);
 
   //静态文件访问
   app.use(express.static(resolve(__dirname, 'public')))
@@ -74,15 +52,6 @@ export async function createServer(
     }
   });
 
-  app.get("/getProductList", verifyRequest(app), async (req, res) => {
-    const session = await Shopify.Utils.loadCurrentSession(req, res, true);
-    const { Product } = await import(
-      `@shopify/shopify-api/dist/rest-resources/${Shopify.Context.API_VERSION}/index.js`
-    );
-    const data = await Product.all({ session });
-    res.status(200).send(data);
-  });
-
   app.post("/one", verifyRequest(app), async (req, res) => {
     const session = await Shopify.Utils.loadCurrentSession(req, res, true);
     const { Product, Variant } = await import(
@@ -90,7 +59,6 @@ export async function createServer(
     );
     console.log(Shopify.Context.API_VERSION);
     const product = new Product({ session })
-
     product.title = "增加一个没有图片的";
     product.body_html = "<strong>Good snowboard!</strong>";
     product.vendor = "Burton";
@@ -109,29 +77,43 @@ export async function createServer(
       value: ['橡胶']
     }] */
     await product.save({});
-
     const data = await Product.all({ session });
     data.forEach(async (item: { id: number }) => {
       if (item.id !== 8002044231920) {
-
         const variant = new Variant({ session })
         variant.product_id = item.id;
         variant.option1 = "Yellow";
         variant.price = "111111.00";
-        // variant.option2 = "S";
-        // variant.title = "Yellow";
-        // variant.option3 = "塑料";
-        // variant.price = "1.00";
-        // variant.
         await variant.save({});
       }
     })
-
-    res.status(200).send({
-      msg: '商品增加成功'
+    res.send({
+      errorCode: 1,
+      message: 'success'
     });
   })
-  app.post("/addProduct", verifyRequest(app), async (req, res) => {
+
+  app.get("/product", verifyRequest(app), async (req, res) => {
+    const session = await Shopify.Utils.loadCurrentSession(req, res, true);
+    const { Product } = await import(
+      `@shopify/shopify-api/dist/rest-resources/${Shopify.Context.API_VERSION}/index.js`
+    );
+    try {
+      const data = await Product.all({ session });
+      res.send({
+        errorCode: 1,
+        message: 'success',
+        data
+      });
+    } catch (err) {
+      res.send({
+        errorCode: 0,
+        message: (<Error>err).message
+      });
+    }
+  });
+
+  app.post("/product", verifyRequest(app), async (req, res) => {
     const session = await Shopify.Utils.loadCurrentSession(req, res, true);
     const { Product, Image } = await import(
       `@shopify/shopify-api/dist/rest-resources/${Shopify.Context.API_VERSION}/index.js`
@@ -154,13 +136,33 @@ export async function createServer(
         await image.save({})
       }
     })
-
-    res.status(200).send({
-      msg: '商品增加成功'
+    res.send({
+      errorCode: 1,
+      message: 'success'
     });
   });
 
-  app.post("/exportProducts", verifyRequest(app), async (req, res) => {
+  app.delete("/product/:id", verifyRequest(app), async (req, res) => {
+    const { id } = req.params
+    const session = await Shopify.Utils.loadCurrentSession(req, res, true);
+    const { Product } = await import(
+      `@shopify/shopify-api/dist/rest-resources/${Shopify.Context.API_VERSION}/index.js`
+    );
+    try {
+      await Product.delete({ session, id })
+      res.send({
+        errorCode: 1,
+        message: 'success'
+      });
+    } catch (err) {
+      res.send({
+        errorCode: 0,
+        message: (err as Error).message
+      });
+    }
+  });
+
+  app.post("/product/import", verifyRequest(app), async (req, res) => {
     const session = await Shopify.Utils.loadCurrentSession(req, res, true);
     const { Product, Image } = await import(
       `@shopify/shopify-api/dist/rest-resources/${Shopify.Context.API_VERSION}/index.js`
@@ -174,9 +176,13 @@ export async function createServer(
     });
     form.parse(req, async (err, fields, files) => {
       if (err) return err.message;
-      const csvfile = files.csvfile as { filepath: string }
+      const csvfile = files.csvfile as { filepath: string; mimetype: string }
+      if (csvfile.mimetype !== 'text/csv') return res.send({
+        errorCode: 0,
+        message: 'unsupported file type'
+      })
       const filepath = resolve(__dirname, csvfile.filepath)
-      //解析文件
+      //解析文件 
       //colNumber 第几列
       //cell.type 2：数字；3：字符串；9：布尔值
       //cell.value 内容
@@ -217,8 +223,12 @@ export async function createServer(
               })
             }
           })
-          await product.save({})
+          // await product.save({})
+          product.save({})
+          const count = await Product.count({ session });
+          console.log('1=>', count);
           if (!flag) {
+            console.log('2=>', count);
             flag = true;
             const data = await Product.all({ session });
             data.forEach(async (item: { id: number } & IFilterList) => {
@@ -232,38 +242,15 @@ export async function createServer(
               })
               await image.save({})
             })
-            res.status(200).json({
-              msg: '文件上传成功哈哈'
+            res.send({
+              errorCode: 1,
+              message: 'success'
             });
           }
         }
       })
     });
   });
-
-  app.delete("/deleteProduct", verifyRequest(app), async (req, res) => {
-    const session = await Shopify.Utils.loadCurrentSession(req, res, true);
-    const { Product } = await import(
-      `@shopify/shopify-api/dist/rest-resources/${Shopify.Context.API_VERSION}/index.js`
-    );
-    const { id } = req.query
-    Product.delete({
-      session,
-      id
-    })
-    res.status(200).send({
-      msg: '商品删除成功'
-    });
-  });
-
-  // app.post("/graphql", verifyRequest(app), async (req, res) => {
-  //   try {
-  //     const response = await Shopify.Utils.graphqlProxy(req, res);
-  //     res.status(200).send(response.body);
-  //   } catch (error) {
-  //     res.status(500).send((error as Error).message);
-  //   }
-  // });
 
   app.use(express.json());
 
@@ -286,9 +273,9 @@ export async function createServer(
     // Detect whether we need to reinstall the app, any request from Shopify will
     // include a shop in the query parameters.
     if (app.get("active-shopify-shops")[shop as string] === undefined && shop) {
-      // res.redirect(`/auth?${new URLSearchParams(req.query).toString()}`);//URLSearchParams ParsedQs
-      // @ts-ignore
-      res.redirect(`/auth?${new URLSearchParams(req.query).toString()}`);
+      const params = JSON.parse(JSON.stringify(req.query))
+      res.redirect(`/auth?${new URLSearchParams(params).toString()}`);
+
     } else {
       next();
     }

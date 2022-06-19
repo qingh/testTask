@@ -6,9 +6,9 @@ import topLevelAuthRedirect from "../helpers/top-level-auth-redirect.js";
 export default function applyAuthMiddleware(app: Express) {
   app.get("/auth", async (req, res) => {
     if (!req.signedCookies[app.get("top-level-oauth-cookie")]) {
+      const params = JSON.parse(JSON.stringify(req.query))
       return res.redirect(
-        // @ts-ignore
-        `/auth/toplevel?${new URLSearchParams(req.query).toString()}`
+        `/auth/toplevel?${new URLSearchParams(params).toString()}`
       );
     }
 
@@ -31,26 +31,24 @@ export default function applyAuthMiddleware(app: Express) {
     });
 
     res.set("Content-Type", "text/html");
-
+    const params = JSON.parse(JSON.stringify(req.query))
     res.send(
       topLevelAuthRedirect({
         apiKey: Shopify.Context.API_KEY,
         hostName: Shopify.Context.HOST_NAME,
-        // @ts-ignore
-        host: req.query.host,
-        // @ts-ignore
-        query: req.query,
+        host: req.query.host as string,
+        query: params,
       })
     );
   });
   //AuthQuery
   app.get("/auth/callback", async (req, res) => {
     try {
+      const params = JSON.parse(JSON.stringify(req.query))
       const session = await Shopify.Auth.validateAuthCallback(
         req,
         res,
-        // @ts-ignore
-        req.query
+        params
       );
 
       const host = req.query.host;

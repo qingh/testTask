@@ -1,4 +1,4 @@
-import  { Express } from "express";
+import { Express, Request, Response, NextFunction } from "express";
 import { Shopify } from "@shopify/shopify-api";
 
 const TEST_GRAPHQL_QUERY = `
@@ -8,9 +8,8 @@ const TEST_GRAPHQL_QUERY = `
   }
 }`;
 
-export default function verifyRequest(app:Express, { returnHeader = true } = {}) {
-   // @ts-ignore
-  return async (req, res, next) => {
+export default function verifyRequest(app: Express, { returnHeader = true } = {}) {
+  return async (req: Request, res: Response, next: NextFunction) => {
     const session = await Shopify.Utils.loadCurrentSession(
       req,
       res,
