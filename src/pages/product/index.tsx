@@ -16,6 +16,7 @@ export function Product() {
   const http = useHttp()
   const [list, setList] = useState<IProduct[]>([])
 
+  /** 产品列表 */
   async function getProductList() {
     const [err, res] = await http({ url: '/product' })
     if (err) return console.log(err);
@@ -24,27 +25,13 @@ export function Product() {
     setList(data)
   }
 
-  async function addProduct() {
-    const [err, res] = await http({ url: '/product', method: 'POST' })
-    if (err) return console.log(err);
-    const { errorCode, message } = res
-    if (!errorCode) return console.log(message);
-    getProductList()
-  }
-
-  async function one() {
-    const [err, res] = await http({ url: '/product/one', method: 'POST' })
-    if (err) return console.log(err);
-    const { errorCode, message } = res
-    if (!errorCode) return console.log(message);
-    getProductList()
-  }
-
-  async function exportProducts(ev: ChangeEvent) {
+  /** 从附件导入产品 */
+  async function importProductsFromFile(ev: ChangeEvent) {
     const target = ev.target as HTMLInputElement
     const body = new FormData()
     const file = target.files![0]
-    if (file.type !== 'text/csv') return console.log('unsupported file type')
+    const fileType = ['text/csv', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
+    if (!fileType.includes(file.type)) return console.log('unsupported file type')
     body.append('csvfile', file)
     const [err, res] = await http({ url: '/product/import', method: 'POST', body })
     target.value = ''
@@ -54,24 +41,16 @@ export function Product() {
     getProductList()
   }
 
+  /** 删除产品 */
   async function deleteProduct(id: number) {
     const isDelete = confirm('确定删除商品吗')
     if (isDelete) {
       const [err, res] = await http({ url: `/product/${id}`, method: 'DELETE' })
-      // const [err, res] = await http({ url: `/product/variants/${id}` })
       if (err) return console.log(err);
       const { errorCode, message } = res
       if (!errorCode) return console.log(message);
       getProductList()
     }
-  }
-
-  async function addProductAttr(id: number) {
-    const [err, res] = await http({ url: `/product/variants/${id}`, method: 'POST', body: { user: 'zhang' } })
-    if (err) return console.log(err);
-    const { errorCode, message } = res
-    if (!errorCode) return console.log(message);
-    getProductList()
   }
 
   useEffect(() => {
@@ -80,17 +59,13 @@ export function Product() {
 
   return (
     <>
-      <input type="file" accept="text/csv" onChange={(ev) => exportProducts(ev)} />
-      {/* <button type="button" onClick={() => {
-        http({ url: '/product/variants/8002642706672', body: { user: 'qingh' } })
-      }}>test</button> */}
-      <button type="button" onClick={() => one()}>添加商品，没有图片</button>
-      <button type="button" onClick={() => addProduct()}>添加商品，有图片</button>
-      <button type="button" onClick={() => getProductList()}>重新获取商品列表</button>
-      {/* <button type="button" onClick={() => exportProducts()}>批量导入商品</button> */}
+      <div>
+        <input type="file" onChange={(ev) => importProductsFromFile(ev)} accept="text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+        <button type="button" onClick={() => getProductList()}>获取商品列表</button>
+      </div>
       <ul className={css.list}>
         {
-          list.map(item => <li key={item.id} onClick={() => addProductAttr(item.id)} title={item.title}>
+          list.map(item => <li key={item.id} onClick={() => deleteProduct(item.id)} title={item.title}>
             <div>
               <img src={item.image ? item.image.src : defaultImg} width="225" height="225" alt="" />
               <div>

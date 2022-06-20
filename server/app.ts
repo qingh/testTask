@@ -7,9 +7,9 @@ import { Shopify } from "@shopify/shopify-api";
 import "dotenv/config";
 import { shopInit } from './shopifyInit.js';
 import applyAuthMiddleware from "./middleware/auth.js";
-import { productRouter } from './router/product.js';
+import { productRouter } from './product.js';
 
-const PORT = 8081;
+const PORT = 8081
 const { NODE_ENV, VITE_TEST_BUILD } = process.env
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
